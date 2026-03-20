@@ -1,4 +1,4 @@
-[![Rust](https://img.shields.io/badge/Rust-2024_edition-f74c00?logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![Rust](https://img.shields.io/badge/Rust-1.85+-f74c00?logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Axum](https://img.shields.io/badge/Axum-0.8-blue)](https://github.com/tokio-rs/axum)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-CLI_Proxy-blueviolet?logo=anthropic)](https://docs.anthropic.com/en/docs/claude-code)
@@ -13,18 +13,18 @@ Use your Claude subscription (Max, Team, Enterprise) as an OpenClaw provider wit
 ## How it works
 
 ```
-Client (OpenClaw, curl, SDK)
-        │
-        ▼
-  ┌─────────────┐    stdin/stdout     ┌────────────┐
-  │  Proxy :3456 │ ◄──── NDJSON ────► │ claude CLI  │
-  │  (axum)      │                     │ subprocess  │
-  └─────────────┘                     └────────────┘
-        │
-   SSE / JSON
-        │
-        ▼
-     Client
+  Client (OpenClaw, curl, SDK)
+          │
+          ▼
+  ┌───────────────┐   stdin/stdout   ┌──────────────┐
+  │  Proxy :3456  │ ◄─── NDJSON ───► │  claude CLI   │
+  │    (axum)     │                  │  subprocess   │
+  └───────────────┘                  └──────────────┘
+          │
+     SSE / JSON
+          │
+          ▼
+       Client
 ```
 
 Each request spawns a `claude -p --output-format stream-json` subprocess. The proxy filters SSE events — only **text content blocks** are forwarded (thinking, tool_use, and signature blocks are stripped for SDK compatibility). Stateless: no session persistence.
@@ -72,6 +72,12 @@ curl -sN http://localhost:3456/v1/messages \
 
 Expected: SSE stream with `message_start` → `content_block_delta` → `message_stop`.
 
+> [!IMPORTANT]
+> ### OpenClaw Setup Guide
+> For detailed integration instructions — config, systemd service, model IDs, troubleshooting:
+>
+> **[docs/SETUP.md](docs/SETUP.md)**
+
 ## Endpoints
 
 | Method | Path | Description |
@@ -80,12 +86,6 @@ Expected: SSE stream with `message_start` → `content_block_delta` → `message
 | `GET` | `/v1/models` | Available models list |
 | `POST` | `/v1/messages` | Anthropic Messages API |
 | `POST` | `/v1/chat/completions` | OpenAI Chat Completions API |
-
-> [!IMPORTANT]
-> ### LLM Client Setup Guide
-> For detailed integration instructions with **OpenClaw** (config, systemd service, model IDs, troubleshooting), see:
->
-> **[docs/SETUP.md](docs/SETUP.md)**
 
 ## License
 

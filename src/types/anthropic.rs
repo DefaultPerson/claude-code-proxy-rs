@@ -186,9 +186,9 @@ impl Content {
                             let text = content
                                 .as_ref()
                                 .map(|v| {
-                                    v.as_str()
-                                        .map(|s| s.to_string())
-                                        .unwrap_or_else(|| serde_json::to_string(v).unwrap_or_default())
+                                    v.as_str().map(|s| s.to_string()).unwrap_or_else(|| {
+                                        serde_json::to_string(v).unwrap_or_default()
+                                    })
                                 })
                                 .unwrap_or_default();
                             Some(format!(
@@ -208,7 +208,13 @@ impl Content {
 }
 
 impl MessagesResponse {
-    pub fn new(id: String, model: String, text: String, stop_reason: Option<String>, usage: ResponseUsage) -> Self {
+    pub fn new(
+        id: String,
+        model: String,
+        text: String,
+        stop_reason: Option<String>,
+        usage: ResponseUsage,
+    ) -> Self {
         Self {
             id,
             response_type: "message".to_string(),
