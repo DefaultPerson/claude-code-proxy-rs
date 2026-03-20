@@ -21,10 +21,10 @@ Use your Claude subscription (Max, Team, Enterprise) as an OpenClaw provider wit
   │    (axum)     │                  │  subprocess  │
   └───────────────┘                  └──────────────┘
           │
-     SSE / JSON
+      SSE / JSON
           │
           ▼
-       Client
+        Client
 ```
 
 Each request spawns a `claude -p --output-format stream-json` subprocess. The proxy filters SSE events — only **text content blocks** are forwarded (thinking, tool_use, and signature blocks are stripped for SDK compatibility). Stateless: no session persistence.
@@ -51,6 +51,12 @@ cargo build --release
 ./target/release/claude-code-proxy --port 3456 --cwd ~ --embed-system-prompt
 ```
 
+> [!IMPORTANT]
+> ### 🤖 Instructions for LLM: Configuring proxy with OpenClaw
+> Full setup guide for connecting this proxy as an **OpenClaw** LLM provider — `openclaw.json` config, systemd service, model IDs, and troubleshooting:
+>
+> **➜ [docs/SETUP.md](docs/SETUP.md)**
+
 ### CLI flags
 
 | Flag | Default | Description |
@@ -61,12 +67,6 @@ cargo build --release
 | `--replace-system-prompt` | `false` | Replace CLI system prompt entirely via `--system-prompt` |
 | `--effort` | — | Thinking effort: `low`, `medium`, `high`, `max` |
 | `--max-turns` | `100` | Max agentic turns per request |
-
-> [!IMPORTANT]
-> ### 🤖 LLM Integration — OpenClaw Setup
-> Step-by-step guide for connecting this proxy to **OpenClaw** as an LLM provider — config, systemd service, model IDs, troubleshooting:
->
-> **➜ [docs/SETUP.md](docs/SETUP.md)**
 
 ## Verify
 
