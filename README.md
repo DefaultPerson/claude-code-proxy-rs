@@ -7,6 +7,8 @@
 
 Lightweight Rust proxy built for **OpenClaw** — wraps **Claude Code CLI** as a subprocess and exposes it via **Anthropic Messages API** and **OpenAI Chat Completions API**.
 
+Existing Claude Code proxy implementations (Node.js, Go) have compatibility issues with OpenClaw's Anthropic SDK integration. This proxy was built from scratch to handle those edge cases reliably.
+
 Use your Claude subscription (Max, Team, Enterprise) as an OpenClaw provider without a direct API key.
 
 ## How it works
