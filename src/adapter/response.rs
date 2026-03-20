@@ -313,6 +313,7 @@ mod tests {
     fn stream_event_forwards_content_block_delta() {
         let mut state = StreamState::new("test".to_string(), "model".to_string());
         state.sent_message_start = true;
+        state.current_block_is_text = true;
 
         let payload = json!({
             "type": "content_block_delta",
