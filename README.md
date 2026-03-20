@@ -1,11 +1,11 @@
+# claude-code-proxy-rs
+
 [![Release](https://img.shields.io/github/v/release/DefaultPerson/claude-code-proxy-rs?color=success)](https://github.com/DefaultPerson/claude-code-proxy-rs/releases/latest)
 [![Rust](https://img.shields.io/badge/Rust-1.85+-f74c00?logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Axum](https://img.shields.io/badge/Axum-0.8-blue)](https://github.com/tokio-rs/axum)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-CLI_Proxy-blueviolet?logo=anthropic)](https://docs.anthropic.com/en/docs/claude-code)
 [![Built for OpenClaw](https://img.shields.io/badge/Built_for-OpenClaw-ff6b35)](https://github.com/nicepkg/openclaw)
-
-# claude-code-proxy-rs
 
 Lightweight Rust proxy built for **[OpenClaw](https://github.com/nicepkg/openclaw)** — wraps **Claude Code CLI** as a subprocess and exposes it via **Anthropic Messages API** and **OpenAI Chat Completions API**.
 
