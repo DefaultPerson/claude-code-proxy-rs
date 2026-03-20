@@ -1,10 +1,10 @@
 //! HTTP route handlers.
 
+use axum::Json;
 use axum::body::Body;
 use axum::extract::State;
 use axum::http::header;
 use axum::response::{IntoResponse, Response};
-use axum::Json;
 use serde_json::json;
 use tokio::sync::mpsc;
 use tracing::{error, info, warn};
@@ -313,7 +313,10 @@ async fn handle_openai_streaming(
 
         while let Some(event) = sub_rx.recv().await {
             match event {
-                subprocess::SubprocessEvent::StreamEvent { event_type, payload } => {
+                subprocess::SubprocessEvent::StreamEvent {
+                    event_type,
+                    payload,
+                } => {
                     // Only forward text_delta content (skip thinking, tool_use, etc.)
                     if event_type == "content_block_delta" {
                         if let Some(text) = payload
@@ -341,7 +344,9 @@ async fn handle_openai_streaming(
                                 }]
                             });
                             let bytes = format_openai_sse(&serde_json::to_string(&chunk).unwrap());
-                            if bytes_tx.send(Ok(bytes)).await.is_err() { return; }
+                            if bytes_tx.send(Ok(bytes)).await.is_err() {
+                                return;
+                            }
                         }
                     }
                 }
@@ -365,7 +370,8 @@ async fn handle_openai_streaming(
                                         "finish_reason": serde_json::Value::Null,
                                     }]
                                 });
-                                let bytes = format_openai_sse(&serde_json::to_string(&chunk).unwrap());
+                                let bytes =
+                                    format_openai_sse(&serde_json::to_string(&chunk).unwrap());
                                 let _ = bytes_tx.send(Ok(bytes)).await;
                             }
                         }
@@ -416,7 +422,11 @@ async fn handle_openai_streaming(
                         return;
                     }
                     let msg = errors.join("; ");
-                    let err_msg = if msg.is_empty() { "CLI error".to_string() } else { msg };
+                    let err_msg = if msg.is_empty() {
+                        "CLI error".to_string()
+                    } else {
+                        msg
+                    };
                     let err = json!({"error": {"message": err_msg, "type": "server_error"}});
                     let bytes = format_openai_sse(&serde_json::to_string(&err).unwrap());
                     let _ = bytes_tx.send(Ok(bytes)).await;

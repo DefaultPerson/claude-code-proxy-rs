@@ -17,8 +17,8 @@ Use your Claude subscription (Max, Team, Enterprise) as an OpenClaw provider wit
           │
           ▼
   ┌───────────────┐   stdin/stdout   ┌──────────────┐
-  │  Proxy :3456  │ ◄─── NDJSON ───► │  claude CLI   │
-  │    (axum)     │                  │  subprocess   │
+  │  Proxy :3456  │ ◄─── NDJSON ───► │  claude CLI  │
+  │    (axum)     │                  │  subprocess  │
   └───────────────┘                  └──────────────┘
           │
      SSE / JSON

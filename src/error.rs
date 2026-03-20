@@ -19,9 +19,11 @@ pub enum AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, error_type, message) = match &self {
-            AppError::BadRequest(msg) => {
-                (StatusCode::BAD_REQUEST, "invalid_request_error", msg.clone())
-            }
+            AppError::BadRequest(msg) => (
+                StatusCode::BAD_REQUEST,
+                "invalid_request_error",
+                msg.clone(),
+            ),
             AppError::Internal(msg) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "api_error", msg.clone())
             }

@@ -84,7 +84,9 @@ fn messages_to_prompt(messages: &[crate::types::anthropic::Message]) -> String {
         match msg.role.as_str() {
             "user" => parts.push(text),
             "assistant" => {
-                parts.push(format!("<assistant_response>\n{text}\n</assistant_response>"));
+                parts.push(format!(
+                    "<assistant_response>\n{text}\n</assistant_response>"
+                ));
             }
             _ => parts.push(text),
         }

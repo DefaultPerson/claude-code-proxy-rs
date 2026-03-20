@@ -13,10 +13,7 @@ use crate::types::cli::{CliMessage, ResultMessage, Usage};
 #[derive(Debug)]
 pub enum SubprocessEvent {
     /// CLI init: session ID and model from `system/init`.
-    Init {
-        session_id: String,
-        model: String,
-    },
+    Init { session_id: String, model: String },
     /// Raw Anthropic streaming event from `stream_event.event`.
     /// `event_type` is the event name (e.g. "content_block_delta").
     /// `payload` is the raw JSON to emit as SSE data.
@@ -27,9 +24,7 @@ pub enum SubprocessEvent {
     /// Final result with usage data.
     Result(ResultData),
     /// CLI-level error (result.subtype starts with "error").
-    CliError {
-        errors: Vec<String>,
-    },
+    CliError { errors: Vec<String> },
     /// Subprocess spawn/IO error.
     ProcessError(String),
     /// Process exited with given code.
@@ -144,7 +139,9 @@ pub async fn spawn_subprocess(
     if let Some(mut stdin) = child.stdin.take() {
         if let Err(e) = stdin.write_all(prompt.as_bytes()).await {
             error!("[req={rid}][pid={pid}] Failed to write stdin: {e}");
-            let _ = tx.send(SubprocessEvent::ProcessError(format!("stdin write: {e}"))).await;
+            let _ = tx
+                .send(SubprocessEvent::ProcessError(format!("stdin write: {e}")))
+                .await;
             let _ = child.kill().await;
             return;
         }
@@ -236,12 +233,7 @@ pub async fn spawn_subprocess(
         }
     }
 
-    let exit_code = child
-        .wait()
-        .await
-        .ok()
-        .and_then(|s| s.code())
-        .unwrap_or(-1);
+    let exit_code = child.wait().await.ok().and_then(|s| s.code()).unwrap_or(-1);
 
     let elapsed = start.elapsed().as_secs_f64();
     info!("[req={rid}][pid={pid}] Exited code={exit_code} total={elapsed:.2}s");
@@ -254,7 +246,10 @@ fn process_line(line: &str, rid: &str) -> Vec<SubprocessEvent> {
     let value: serde_json::Value = match serde_json::from_str(line) {
         Ok(v) => v,
         Err(_) => {
-            debug!("[req={rid}] Non-JSON line: {}", &line[..line.len().min(100)]);
+            debug!(
+                "[req={rid}] Non-JSON line: {}",
+                &line[..line.len().min(100)]
+            );
             return vec![];
         }
     };
@@ -329,7 +324,10 @@ fn process_line(line: &str, rid: &str) -> Vec<SubprocessEvent> {
                         .as_ref()
                         .and_then(|i| i.utilization)
                         .unwrap_or(0.0);
-                    warn!("[req={rid}] Rate limit warning: {:.0}% utilized", util * 100.0);
+                    warn!(
+                        "[req={rid}] Rate limit warning: {:.0}% utilized",
+                        util * 100.0
+                    );
                     vec![]
                 }
                 _ => vec![],
