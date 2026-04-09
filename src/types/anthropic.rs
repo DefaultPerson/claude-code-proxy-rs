@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 // Request types (what OpenClaw sends us)
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct MessagesRequest {
     pub model: String,
     pub max_tokens: u64,
@@ -21,36 +21,39 @@ pub struct MessagesRequest {
     pub stop_sequences: Option<Vec<String>>,
     pub tools: Option<Vec<serde_json::Value>>,
     pub tool_choice: Option<serde_json::Value>,
+    /// API-only: extended thinking configuration.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thinking: Option<serde_json::Value>,
 }
 
 /// System prompt: either a plain string or array of content blocks.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum SystemPrompt {
     Text(String),
     Blocks(Vec<SystemBlock>),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct SystemBlock {
     #[serde(rename = "type")]
     pub block_type: String,
     pub text: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Metadata {
     pub user_id: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Message {
     pub role: String,
     pub content: Content,
 }
 
 /// Message content: either a plain string or array of content blocks.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum Content {
     Text(String),
@@ -60,7 +63,7 @@ pub enum Content {
 /// Content blocks in messages. We use untagged deserialization with a typed
 /// struct first, falling back to raw Value for unknown block types (thinking,
 /// redacted_thinking, etc.) that OpenClaw may include in conversation history.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum ContentBlock {
     Typed(TypedContentBlock),
@@ -68,7 +71,7 @@ pub enum ContentBlock {
     Unknown(serde_json::Value),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type")]
 pub enum TypedContentBlock {
     #[serde(rename = "text")]

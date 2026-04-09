@@ -15,6 +15,12 @@ pub enum AppError {
 
     #[error("Subprocess error: {0}")]
     Subprocess(String),
+
+    #[error("Upstream error ({0}): {1}")]
+    Upstream(u16, String),
+
+    #[error("Token error: {0}")]
+    TokenError(String),
 }
 
 impl IntoResponse for AppError {
@@ -31,6 +37,15 @@ impl IntoResponse for AppError {
             AppError::Subprocess(msg) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "api_error", msg.clone())
             }
+            AppError::Upstream(status, msg) => {
+                let sc = StatusCode::from_u16(*status).unwrap_or(StatusCode::BAD_GATEWAY);
+                (sc, "api_error", msg.clone())
+            }
+            AppError::TokenError(msg) => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                "authentication_error",
+                msg.clone(),
+            ),
         };
 
         let body = json!({

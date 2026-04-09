@@ -1,10 +1,19 @@
 //! Axum server setup: router, state, middleware.
 
+use std::sync::Arc;
+
 use axum::Router;
 use axum::routing::{get, post};
 use tower_http::cors::CorsLayer;
 
+use crate::native::NativeClient;
 use crate::routes;
+
+#[derive(Clone)]
+pub enum ProxyMode {
+    Subprocess,
+    Native,
+}
 
 #[derive(Clone)]
 pub struct AppState {
@@ -13,6 +22,9 @@ pub struct AppState {
     pub replace_system_prompt: bool,
     pub effort: Option<String>,
     pub embed_system_prompt: bool,
+    // Native mode
+    pub mode: ProxyMode,
+    pub native_client: Option<Arc<NativeClient>>,
 }
 
 pub fn create_router(state: AppState) -> Router {
