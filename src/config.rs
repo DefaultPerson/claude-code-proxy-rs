@@ -7,8 +7,8 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use sha2::{Digest, Sha256};
 use serde::Deserialize;
+use sha2::{Digest, Sha256};
 use tracing::{info, warn};
 
 #[derive(Debug, Clone, Deserialize)]
@@ -68,8 +68,8 @@ pub fn load_native_config(path: &str) -> Result<NativeConfig, String> {
     let path = Path::new(path);
     let content = std::fs::read_to_string(path)
         .map_err(|e| format!("Failed to read config file {}: {e}", path.display()))?;
-    let config: NativeConfig = serde_yaml::from_str(&content)
-        .map_err(|e| format!("Failed to parse config YAML: {e}"))?;
+    let config: NativeConfig =
+        serde_yaml::from_str(&content).map_err(|e| format!("Failed to parse config YAML: {e}"))?;
 
     if config.identity.device_id.contains("0000000000") {
         return Err(
@@ -100,8 +100,8 @@ pub fn auto_detect_config() -> Result<NativeConfig, String> {
         )
     })?;
 
-    let creds_json: serde_json::Value =
-        serde_json::from_str(&creds_content).map_err(|e| format!("Invalid credentials JSON: {e}"))?;
+    let creds_json: serde_json::Value = serde_json::from_str(&creds_content)
+        .map_err(|e| format!("Invalid credentials JSON: {e}"))?;
 
     let oauth_obj = &creds_json["claudeAiOauth"];
     if oauth_obj.is_null() {
@@ -201,20 +201,18 @@ fn detect_system_info() -> SystemInfo {
         other => other,
     };
 
-    let shell = std::env::var("SHELL")
-        .unwrap_or_else(|_| "/bin/bash".to_string());
+    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
     let shell_name = shell.rsplit('/').next().unwrap_or("bash").to_string();
 
     let os_version = detect_os_version(platform_name);
 
-    let terminal = std::env::var("TERM_PROGRAM")
-        .unwrap_or_else(|_| {
-            if platform_name == "darwin" {
-                "Apple_Terminal".to_string()
-            } else {
-                std::env::var("TERM").unwrap_or_else(|_| "xterm-256color".to_string())
-            }
-        });
+    let terminal = std::env::var("TERM_PROGRAM").unwrap_or_else(|_| {
+        if platform_name == "darwin" {
+            "Apple_Terminal".to_string()
+        } else {
+            std::env::var("TERM").unwrap_or_else(|_| "xterm-256color".to_string())
+        }
+    });
 
     let deployment_env = format!("unknown-{platform_name}");
 
@@ -241,15 +239,13 @@ fn detect_os_version(platform: &str) -> String {
                 .map(|s| s.trim().to_string())
                 .unwrap_or_else(|| "Darwin 24.4.0".to_string())
         }
-        "linux" => {
-            std::process::Command::new("uname")
-                .arg("-sr")
-                .output()
-                .ok()
-                .and_then(|o| String::from_utf8(o.stdout).ok())
-                .map(|s| s.trim().to_string())
-                .unwrap_or_else(|| "Linux 6.5.0".to_string())
-        }
+        "linux" => std::process::Command::new("uname")
+            .arg("-sr")
+            .output()
+            .ok()
+            .and_then(|o| String::from_utf8(o.stdout).ok())
+            .map(|s| s.trim().to_string())
+            .unwrap_or_else(|| "Linux 6.5.0".to_string()),
         _ => format!("{platform} unknown"),
     }
 }
@@ -265,7 +261,6 @@ fn detect_cc_version() -> Option<String> {
     let version_str = String::from_utf8(output.stdout).ok()?;
     // Output is "2.1.92 (Claude Code)" — take first token
     let version = version_str
-        .trim()
         .split_whitespace()
         .next()
         .unwrap_or(version_str.trim());
@@ -277,12 +272,11 @@ fn detect_total_memory() -> u64 {
     // Try /proc/meminfo (Linux)
     if let Ok(content) = std::fs::read_to_string("/proc/meminfo") {
         for line in content.lines() {
-            if line.starts_with("MemTotal:") {
-                if let Some(kb_str) = line.split_whitespace().nth(1) {
-                    if let Ok(kb) = kb_str.parse::<u64>() {
-                        return kb * 1024; // kB → bytes
-                    }
-                }
+            if line.starts_with("MemTotal:")
+                && let Some(kb_str) = line.split_whitespace().nth(1)
+                && let Ok(kb) = kb_str.parse::<u64>()
+            {
+                return kb * 1024; // kB → bytes
             }
         }
     }
@@ -298,7 +292,11 @@ fn generate_and_persist_device_id(path: &Path) -> String {
     if let Err(e) = std::fs::write(path, &id) {
         warn!("Could not persist device_id to {}: {e}", path.display());
     } else {
-        info!("Generated new device_id: {}... (persisted to {})", &id[..8], path.display());
+        info!(
+            "Generated new device_id: {}... (persisted to {})",
+            &id[..8],
+            path.display()
+        );
     }
     id
 }

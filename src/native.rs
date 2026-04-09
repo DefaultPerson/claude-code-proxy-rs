@@ -7,7 +7,7 @@
 use std::sync::Arc;
 
 use axum::body::Body;
-use axum::http::{header, StatusCode};
+use axum::http::{StatusCode, header};
 use axum::response::Response;
 use futures::StreamExt;
 use tracing::{error, info};
@@ -48,7 +48,7 @@ impl NativeClient {
             .credentials
             .get_access_token()
             .await
-            .map_err(|e| AppError::TokenError(e))?;
+            .map_err(AppError::TokenError)?;
 
         // 3. Build serialized body
         let body_bytes = serde_json::to_vec(&body).unwrap();
@@ -56,10 +56,7 @@ impl NativeClient {
         // 4. Build headers
         let mut req_headers = reqwest::header::HeaderMap::new();
         req_headers.insert("x-api-key", token.parse().unwrap());
-        req_headers.insert(
-            "anthropic-version",
-            "2023-06-01".parse().unwrap(),
-        );
+        req_headers.insert("anthropic-version", "2023-06-01".parse().unwrap());
         req_headers.insert(
             reqwest::header::CONTENT_TYPE,
             "application/json".parse().unwrap(),
@@ -79,15 +76,15 @@ impl NativeClient {
         );
 
         // 5. Set host header (matches cc-gateway proxy.ts line 143)
-        if let Ok(parsed) = reqwest::Url::parse(&self.config.upstream.url) {
-            if let Some(host) = parsed.host_str() {
-                let host_val = if let Some(port) = parsed.port() {
-                    format!("{host}:{port}")
-                } else {
-                    host.to_string()
-                };
-                req_headers.insert(reqwest::header::HOST, host_val.parse().unwrap());
-            }
+        if let Ok(parsed) = reqwest::Url::parse(&self.config.upstream.url)
+            && let Some(host) = parsed.host_str()
+        {
+            let host_val = if let Some(port) = parsed.port() {
+                format!("{host}:{port}")
+            } else {
+                host.to_string()
+            };
+            req_headers.insert(reqwest::header::HOST, host_val.parse().unwrap());
         }
 
         // 6. Forward to upstream
@@ -134,18 +131,18 @@ impl NativeClient {
             if lower == "transfer-encoding" || lower == "connection" {
                 continue;
             }
-            if let Ok(name) = axum::http::HeaderName::from_bytes(key.as_str().as_bytes()) {
-                if let Ok(val) = axum::http::HeaderValue::from_bytes(value.as_bytes()) {
-                    response_headers.insert(name, val);
-                }
+            if let Ok(name) = axum::http::HeaderName::from_bytes(key.as_str().as_bytes())
+                && let Ok(val) = axum::http::HeaderValue::from_bytes(value.as_bytes())
+            {
+                response_headers.insert(name, val);
             }
         }
 
         if is_sse {
             // SSE passthrough: stream bytes from reqwest → axum body
-            let byte_stream = resp.bytes_stream().map(|result| {
-                result.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
-            });
+            let byte_stream = resp
+                .bytes_stream()
+                .map(|result| result.map_err(std::io::Error::other));
             let body = Body::from_stream(byte_stream);
 
             let mut builder = Response::builder()
@@ -193,32 +190,43 @@ impl NativeClient {
             .map_err(AppError::TokenError)?;
 
         let body_bytes = serde_json::to_vec(&body).unwrap();
-        let version = self.config.env.get("version").and_then(|v| v.as_str()).unwrap_or("2.1.81");
+        let version = self
+            .config
+            .env
+            .get("version")
+            .and_then(|v| v.as_str())
+            .unwrap_or("2.1.81");
 
         let mut req_headers = reqwest::header::HeaderMap::new();
         req_headers.insert("x-api-key", token.parse().unwrap());
         req_headers.insert("anthropic-version", "2023-06-01".parse().unwrap());
-        req_headers.insert(reqwest::header::CONTENT_TYPE, "application/json".parse().unwrap());
+        req_headers.insert(
+            reqwest::header::CONTENT_TYPE,
+            "application/json".parse().unwrap(),
+        );
         req_headers.insert(
             reqwest::header::USER_AGENT,
-            format!("claude-code/{version} (external, cli)").parse().unwrap(),
+            format!("claude-code/{version} (external, cli)")
+                .parse()
+                .unwrap(),
         );
 
-        if let Ok(parsed) = reqwest::Url::parse(&self.config.upstream.url) {
-            if let Some(host) = parsed.host_str() {
-                let host_val = if let Some(port) = parsed.port() {
-                    format!("{host}:{port}")
-                } else {
-                    host.to_string()
-                };
-                req_headers.insert(reqwest::header::HOST, host_val.parse().unwrap());
-            }
+        if let Ok(parsed) = reqwest::Url::parse(&self.config.upstream.url)
+            && let Some(host) = parsed.host_str()
+        {
+            let host_val = if let Some(port) = parsed.port() {
+                format!("{host}:{port}")
+            } else {
+                host.to_string()
+            };
+            req_headers.insert(reqwest::header::HOST, host_val.parse().unwrap());
         }
 
         let upstream_url = format!("{}{}", self.config.upstream.url, path);
         info!("[req={request_id}] Native raw → {upstream_url}");
 
-        let resp = self.http
+        let resp = self
+            .http
             .post(&upstream_url)
             .headers(req_headers)
             .body(body_bytes)
@@ -269,20 +277,20 @@ pub fn openai_to_anthropic(body: &serde_json::Value) -> serde_json::Value {
         let role = msg["role"].as_str().unwrap_or("user");
         match role {
             "system" | "developer" => {
-                if let Some(text) = extract_text_content(&msg["content"]) {
-                    if !text.is_empty() {
-                        system_parts.push(text);
-                    }
+                if let Some(text) = extract_text_content(&msg["content"])
+                    && !text.is_empty()
+                {
+                    system_parts.push(text);
                 }
             }
             "assistant" => {
-                if let Some(text) = extract_text_content(&msg["content"]) {
-                    if !text.is_empty() {
-                        anthropic_messages.push(serde_json::json!({
-                            "role": "assistant",
-                            "content": text,
-                        }));
-                    }
+                if let Some(text) = extract_text_content(&msg["content"])
+                    && !text.is_empty()
+                {
+                    anthropic_messages.push(serde_json::json!({
+                        "role": "assistant",
+                        "content": text,
+                    }));
                 }
             }
             "tool" => {
@@ -290,13 +298,13 @@ pub fn openai_to_anthropic(body: &serde_json::Value) -> serde_json::Value {
             }
             _ => {
                 // user
-                if let Some(text) = extract_text_content(&msg["content"]) {
-                    if !text.is_empty() {
-                        anthropic_messages.push(serde_json::json!({
-                            "role": "user",
-                            "content": text,
-                        }));
-                    }
+                if let Some(text) = extract_text_content(&msg["content"])
+                    && !text.is_empty()
+                {
+                    anthropic_messages.push(serde_json::json!({
+                        "role": "user",
+                        "content": text,
+                    }));
                 }
             }
         }

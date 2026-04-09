@@ -32,13 +32,11 @@ pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
                 "canonical_device": format!("{}...", &device_id[..8]),
             }))
         }
-        ProxyMode::Subprocess => {
-            Json(json!({
-                "status": "ok",
-                "version": env!("CARGO_PKG_VERSION"),
-                "mode": "subprocess",
-            }))
-        }
+        ProxyMode::Subprocess => Json(json!({
+            "status": "ok",
+            "version": env!("CARGO_PKG_VERSION"),
+            "mode": "subprocess",
+        })),
     }
 }
 
@@ -154,8 +152,7 @@ pub async fn chat_completions(
                 handle_native_openai_streaming(client, anthropic_body, &request_id, model).await
             } else {
                 // Non-streaming: forward, convert Anthropic JSON → OpenAI JSON
-                handle_native_openai_non_streaming(client, anthropic_body, &request_id, model)
-                    .await
+                handle_native_openai_non_streaming(client, anthropic_body, &request_id, model).await
             }
         }
         ProxyMode::Subprocess => {
@@ -172,8 +169,7 @@ pub async fn chat_completions(
 
             let mut prompt_parts: Vec<String> = Vec::new();
             if embed && !system_parts.is_empty() {
-                prompt_parts
-                    .push(format!("<system>\n{}\n</system>", system_parts.join("\n")));
+                prompt_parts.push(format!("<system>\n{}\n</system>", system_parts.join("\n")));
             }
 
             for m in msgs.iter() {
@@ -191,10 +187,8 @@ pub async fn chat_completions(
                         }
                         if let Some(tool_calls) = m["tool_calls"].as_array() {
                             for tc in tool_calls {
-                                let name =
-                                    tc["function"]["name"].as_str().unwrap_or("unknown");
-                                let args =
-                                    tc["function"]["arguments"].as_str().unwrap_or("{}");
+                                let name = tc["function"]["name"].as_str().unwrap_or("unknown");
+                                let args = tc["function"]["arguments"].as_str().unwrap_or("{}");
                                 parts.push(format!("[Called tool: {name}({args})]"));
                             }
                         }
@@ -690,8 +684,7 @@ async fn handle_native_openai_streaming(
                                     "finish_reason": serde_json::Value::Null,
                                 }]
                             });
-                            let bytes =
-                                format_openai_sse(&serde_json::to_string(&chunk).unwrap());
+                            let bytes = format_openai_sse(&serde_json::to_string(&chunk).unwrap());
                             if bytes_tx.send(Ok(bytes)).await.is_err() {
                                 return;
                             }
@@ -720,8 +713,7 @@ async fn handle_native_openai_streaming(
                                 "total_tokens": output_tokens,
                             }
                         });
-                        let bytes =
-                            format_openai_sse(&serde_json::to_string(&done_chunk).unwrap());
+                        let bytes = format_openai_sse(&serde_json::to_string(&done_chunk).unwrap());
                         let _ = bytes_tx.send(Ok(bytes)).await;
                         let _ = bytes_tx.send(Ok(b"data: [DONE]\n\n".to_vec())).await;
                         return;

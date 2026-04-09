@@ -66,7 +66,9 @@ impl CredentialStore {
             } else {
                 info!("No access token provided, refreshing...");
             }
-            self.refresh().await.map_err(|e| format!("Initial token refresh failed: {e}"))?;
+            self.refresh()
+                .await
+                .map_err(|e| format!("Initial token refresh failed: {e}"))?;
         }
 
         Ok(())
@@ -98,12 +100,7 @@ impl CredentialStore {
             "scope": SCOPES,
         });
 
-        let resp = self
-            .http
-            .post(TOKEN_URL)
-            .json(&body)
-            .send()
-            .await?;
+        let resp = self.http.post(TOKEN_URL).json(&body).send().await?;
 
         let status = resp.status();
         let resp_body: serde_json::Value = resp.json().await?;

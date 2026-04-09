@@ -88,8 +88,7 @@ fn rewrite_messages_body(body: &mut serde_json::Value, config: &NativeConfig) {
     {
         if let Ok(mut user_id) = serde_json::from_str::<serde_json::Value>(&user_id_str) {
             if user_id.get("device_id").is_some() {
-                user_id["device_id"] =
-                    serde_json::Value::String(config.identity.device_id.clone());
+                user_id["device_id"] = serde_json::Value::String(config.identity.device_id.clone());
                 body["metadata"]["user_id"] =
                     serde_json::Value::String(serde_json::to_string(&user_id).unwrap());
                 debug!("Rewrote metadata.user_id device_id");
@@ -104,14 +103,16 @@ fn rewrite_messages_body(body: &mut serde_json::Value, config: &NativeConfig) {
         for msg in messages.iter_mut() {
             if let Some(content) = msg.get_mut("content") {
                 if let Some(s) = content.as_str().map(|s| s.to_string()) {
-                    *content =
-                        serde_json::Value::String(rewrite_system_reminders(&s, config));
+                    *content = serde_json::Value::String(rewrite_system_reminders(&s, config));
                 } else if let Some(blocks) = content.as_array_mut() {
                     for block in blocks.iter_mut() {
-                        if let Some(text) = block.get_mut("text").and_then(|t| t.as_str()).map(|s| s.to_string()) {
-                            block["text"] = serde_json::Value::String(
-                                rewrite_system_reminders(&text, config),
-                            );
+                        if let Some(text) = block
+                            .get_mut("text")
+                            .and_then(|t| t.as_str())
+                            .map(|s| s.to_string())
+                        {
+                            block["text"] =
+                                serde_json::Value::String(rewrite_system_reminders(&text, config));
                         }
                     }
                 }
@@ -144,11 +145,11 @@ fn rewrite_messages_body(body: &mut serde_json::Value, config: &NativeConfig) {
                 let text = item
                     .as_str()
                     .or_else(|| item.get("text").and_then(|t| t.as_str()));
-                if let Some(text) = text {
-                    if text.trim_start().starts_with("x-anthropic-billing-header:") {
-                        debug!("Stripped billing header block from system prompt");
-                        return false;
-                    }
+                if let Some(text) = text
+                    && text.trim_start().starts_with("x-anthropic-billing-header:")
+                {
+                    debug!("Stripped billing header block from system prompt");
+                    return false;
                 }
                 true
             });
@@ -156,31 +157,20 @@ fn rewrite_messages_body(body: &mut serde_json::Value, config: &NativeConfig) {
             // Rewrite remaining blocks
             for item in blocks.iter_mut() {
                 if let Some(s) = item.as_str().map(|s| s.to_string()) {
-                    *item = serde_json::Value::String(rewrite_prompt_text(
-                        &s,
-                        config,
-                        Some(&hash),
-                    ));
-                } else if let Some(text) = item.get("text").and_then(|t| t.as_str()).map(|s| s.to_string()) {
-                    item["text"] = serde_json::Value::String(rewrite_prompt_text(
-                        &text,
-                        config,
-                        Some(&hash),
-                    ));
+                    *item = serde_json::Value::String(rewrite_prompt_text(&s, config, Some(&hash)));
+                } else if let Some(text) = item
+                    .get("text")
+                    .and_then(|t| t.as_str())
+                    .map(|s| s.to_string())
+                {
+                    item["text"] =
+                        serde_json::Value::String(rewrite_prompt_text(&text, config, Some(&hash)));
                 }
             }
         } else if let Some(s) = system.as_str().map(|s| s.to_string()) {
             // Single string system prompt
-            let cleaned = regex_replace_all(
-                &s,
-                r"x-anthropic-billing-header:[^\n]+\n?",
-                "",
-            );
-            *system = serde_json::Value::String(rewrite_prompt_text(
-                &cleaned,
-                config,
-                Some(&hash),
-            ));
+            let cleaned = regex_replace_all(&s, r"x-anthropic-billing-header:[^\n]+\n?", "");
+            *system = serde_json::Value::String(rewrite_prompt_text(&cleaned, config, Some(&hash)));
         }
     }
 }
@@ -220,17 +210,20 @@ fn rewrite_event_batch(body: &mut serde_json::Value, config: &NativeConfig) {
         }
 
         // Strip fields that leak gateway URL
-        data.as_object_mut().map(|obj| {
+        if let Some(obj) = data.as_object_mut() {
             obj.remove("baseUrl");
             obj.remove("base_url");
             obj.remove("gateway");
-        });
+        }
 
         // Rewrite base64-encoded additional_metadata
-        if let Some(meta) = data.get("additional_metadata").and_then(|m| m.as_str()).map(|s| s.to_string()) {
-            if let Some(rewritten) = rewrite_additional_metadata(&meta) {
-                data["additional_metadata"] = serde_json::Value::String(rewritten);
-            }
+        if let Some(meta) = data
+            .get("additional_metadata")
+            .and_then(|m| m.as_str())
+            .map(|s| s.to_string())
+            && let Some(rewritten) = rewrite_additional_metadata(&meta)
+        {
+            data["additional_metadata"] = serde_json::Value::String(rewritten);
         }
 
         let event_name = data
@@ -274,7 +267,11 @@ fn rewrite_prompt_text(text: &str, config: &NativeConfig, hash: Option<&str>) ->
     }
 
     // 2. <env> block fields
-    result = regex_replace_all(&result, r"Platform:\s*\S+", &format!("Platform: {}", pe.platform));
+    result = regex_replace_all(
+        &result,
+        r"Platform:\s*\S+",
+        &format!("Platform: {}", pe.platform),
+    );
     result = regex_replace_all(&result, r"Shell:\s*\S+", &format!("Shell: {}", pe.shell));
     result = regex_replace_all(
         &result,
@@ -291,11 +288,7 @@ fn rewrite_prompt_text(text: &str, config: &NativeConfig, hash: Option<&str>) ->
 
     // 4. Home directory paths
     let canonical_home = extract_home_prefix(&pe.working_dir);
-    result = regex_replace_all(
-        &result,
-        r"/(?:Users|home)/[^/\s]+/",
-        &canonical_home,
-    );
+    result = regex_replace_all(&result, r"/(?:Users|home)/[^/\s]+/", &canonical_home);
 
     result
 }
@@ -322,12 +315,7 @@ fn rewrite_system_reminders(text: &str, config: &NativeConfig) -> String {
 fn compute_cch(first_user_message: &str, version: &str) -> String {
     let chars: String = CCH_POSITIONS
         .iter()
-        .map(|&i| {
-            first_user_message
-                .chars()
-                .nth(i)
-                .unwrap_or('0')
-        })
+        .map(|&i| first_user_message.chars().nth(i).unwrap_or('0'))
         .collect();
 
     let mut hasher = Sha256::new();
@@ -363,10 +351,10 @@ fn extract_first_user_message(body: &serde_json::Value) -> String {
         }
         if let Some(blocks) = msg.get("content").and_then(|c| c.as_array()) {
             for block in blocks {
-                if block.get("type").and_then(|t| t.as_str()) == Some("text") {
-                    if let Some(text) = block.get("text").and_then(|t| t.as_str()) {
-                        return text.to_string();
-                    }
+                if block.get("type").and_then(|t| t.as_str()) == Some("text")
+                    && let Some(text) = block.get("text").and_then(|t| t.as_str())
+                {
+                    return text.to_string();
                 }
             }
         }
@@ -386,9 +374,7 @@ fn build_canonical_env(config: &NativeConfig) -> serde_json::Value {
         env.get(key).cloned().unwrap_or(serde_json::Value::Null)
     };
     let get_bool = |key: &str, default: bool| -> bool {
-        env.get(key)
-            .and_then(|v| v.as_bool())
-            .unwrap_or(default)
+        env.get(key).and_then(|v| v.as_bool()).unwrap_or(default)
     };
 
     serde_json::json!({
@@ -459,11 +445,11 @@ fn rewrite_process_fields(
 
 fn rewrite_additional_metadata(original: &str) -> Option<String> {
     let mut decoded = base64_decode_json(original).ok()?;
-    decoded.as_object_mut().map(|obj| {
+    if let Some(obj) = decoded.as_object_mut() {
         obj.remove("baseUrl");
         obj.remove("base_url");
         obj.remove("gateway");
-    });
+    }
     Some(base64_encode_json(&decoded))
 }
 
@@ -611,7 +597,12 @@ mod tests {
 
         let system = body["system"].as_array().unwrap();
         assert_eq!(system.len(), 1);
-        assert!(system[0]["text"].as_str().unwrap().contains("Real system prompt"));
+        assert!(
+            system[0]["text"]
+                .as_str()
+                .unwrap()
+                .contains("Real system prompt")
+        );
     }
 
     #[test]

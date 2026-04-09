@@ -146,9 +146,7 @@ async fn init_subprocess_mode() -> (server::ProxyMode, Option<Arc<native::Native
     (server::ProxyMode::Subprocess, None)
 }
 
-async fn init_native_mode(
-    args: &Args,
-) -> (server::ProxyMode, Option<Arc<native::NativeClient>>) {
+async fn init_native_mode(args: &Args) -> (server::ProxyMode, Option<Arc<native::NativeClient>>) {
     let mut native_config = match &args.native_config {
         Some(path) => config::load_native_config(path).unwrap_or_else(|e| {
             error!("Failed to load native config: {e}");
@@ -177,7 +175,10 @@ async fn init_native_mode(
     if native_config.identity.email == "user@example.com"
         || native_config.identity.email.ends_with("@example.com")
     {
-        error!("Email '{}' looks like a placeholder — use your real Claude account email.", native_config.identity.email);
+        error!(
+            "Email '{}' looks like a placeholder — use your real Claude account email.",
+            native_config.identity.email
+        );
         error!("Usage: --email your-real-email@domain.com");
         std::process::exit(1);
     }
