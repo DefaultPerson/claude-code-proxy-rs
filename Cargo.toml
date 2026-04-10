@@ -23,7 +23,7 @@ reqwest = { version = "0.12", features = ["json", "stream", "rustls-tls"], defau
 futures = "0.3"
 sha2 = "0.10"
 serde_yaml = "0.9"
-rand = "0.9"
+rand = "0.10"
 regex-lite = "0.1"
 base64 = "0.22"
 hex = "0.4"
